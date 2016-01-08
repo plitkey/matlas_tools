@@ -1,0 +1,8 @@
+# The Python script modifies original lastools source code for matlas compatible LASlib compilation.
+
+# To run the Python script, do the following:
+
+python runthisfile.py "PathToLastools" 0    # Modify original lastools source code to be compiled as a dynamic .mex file [default]
+python runthisfile.py "PathToLastools" 1    # Modify original lastools source code  to be compiled as a static .mex file
+
+# See Documentation folder for additional compilation instructions to compile LASlib library with Visual C++ Express 2010 + Windows SDK 7.1

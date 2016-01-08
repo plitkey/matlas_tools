@@ -1,0 +1,33 @@
+# -----------------------------------------------------------------------
+
+  LICENSE AGREEMENT:
+
+  This software is distributed WITHOUT ANY WARRANTY and without even the
+  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+# -----------------------------------------------------------------------
+
+All code in this package are published under LGPL 2.1 license.
+
+See COPYING.txt provided in this folder for details.
+
+# -----------------------------------------------------------------------
+
+All documentation in this package are published under Creative Commons 4.0 "Attribute" license.
+
+See CC-BY-40.pdf provided in this folder for details.
+
+# -----------------------------------------------------------------------
+
+  PROGRAMMERS:
+  
+  paula.litkey (at) fgi.fi
+  eetu.puttonen (at) fgi.fi
+  
+# -----------------------------------------------------------------------
+
+  COPYRIGHT:
+  
+  (c) 2012-2014, Finnish Geodetic Institute
+
+# -----------------------------------------------------------------------
