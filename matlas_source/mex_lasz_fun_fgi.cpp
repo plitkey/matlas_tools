@@ -34,7 +34,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-
 #ifndef mwIndex
 #define mwIndex int
 #endif
@@ -137,7 +136,7 @@ void set_argv(char** A, char* str2)
 	  case '"':	    
 	    if (lock)
 		{
-		  lock = false; // turn lock off, update marker		  
+		  lock = false; // turn lock off, update marker		   
 		  if (j-cs > 1)
 		  {
 		    str_tmp = (char *) mxCalloc(128, sizeof(char *));
@@ -187,7 +186,7 @@ int maxcoord(double *xmax, double *x, mwSize len)
             *xmax = *(x+Ret);
         }
         Ret++;
-    }
+    } 
     return(Ret);
 }
 
@@ -209,7 +208,7 @@ long double2long(double d)
   return l;
 }
 
-//**********************************************************************
+//*********************************************** ***********************
 // FGI parser -pli
 // remove only arguments which start with "fgi"
 //
@@ -275,7 +274,7 @@ BOOL fgiparse(int argc, char *argv[], fgi_options *fgiopts)
             *argv[i]='\0';
             i++;
             sscanf(argv[i], "%lf", &(scale_factor[1]));
-            *argv[i]='\0';
+            *argv[i]='\0'; 
             i++;
             sscanf(argv[i], "%lf", &(scale_factor[2]));
             *argv[i]='\0';
@@ -296,7 +295,7 @@ BOOL fgiparse(int argc, char *argv[], fgi_options *fgiopts)
             sscanf(argv[i], "%lf", &(offset[0]));
             *argv[i]='\0';
             i++;
-            sscanf(argv[i], "%lf", &(offset[1]));
+            sscanf(argv[i], "%lf", &(offset[1 ]));
             *argv[i]='\0';
             i++;
             sscanf(argv[i], "%lf", &(offset[2]));
@@ -323,7 +322,7 @@ void copy_vlr_struct(mxArray *tmpvlr_1, LASheader *header, int vlrid) {
     prI8 = (I8 *)mxGetData(tmpI8);
     prI8 = header->vlrs[vlrid].user_id;
     mxSetFieldByNumber(tmpvlr_1,vlrid,1,tmpI8);
-
+    
     tmpU16_2 = mxCreateNumericMatrix(1,1,mxUINT16_CLASS,mxREAL);
     prU2 = (U16 *)mxGetData(tmpU16_2);
     *prU2 = header->vlrs[vlrid].record_id;
@@ -337,7 +336,7 @@ void copy_vlr_struct(mxArray *tmpvlr_1, LASheader *header, int vlrid) {
         tmpU8 = mxCreateNumericMatrix(1,header->vlrs[vlrid].record_length_after_header,mxUINT8_CLASS,mxREAL);
         mxSetFieldByNumber(tmpvlr_1,vlrid,5,tmpU8);
         U8 *tmp = (U8 *) mxGetData(tmpU8);
-        try 
+        try
         {
             memcpy(tmp,header->vlrs[vlrid].data,header->vlrs[vlrid].record_length_after_header*sizeof(U8));
         }
@@ -346,28 +345,51 @@ void copy_vlr_struct(mxArray *tmpvlr_1, LASheader *header, int vlrid) {
             mexWarnMsgTxt("vlrs length not correct\n");
         }
     }
-
 }
-
-void get_header_fields(LASheader *header, mxArray *mexhdr) {
+void copy_wf_vlr_struct(mxArray *tmpvlr_2, LASvlr_wave_packet_descr *vlr_wave_packet_descr, int vlrid) {
+    mxArray *tmpU321, *tmpU322, *tmpU81, *tmpU82;
+    U32 *prU321, *prU322;
+    U8  *prU81, *prU82;
+    tmpU81 = mxCreateNumericMatrix(1,1,mxUINT8_CLASS,mxREAL);
+    prU81 = (U8 *)mxGetData(tmpU81);
+    *prU81 = vlr_wave_packet_descr->getBitsPerSample();
+    mxSetFieldByNumber(tmpvlr_2,vlrid,0,tmpU81);
+    tmpU82 = mxCreateNumericMatrix(1,1,mxUINT8_CLASS,mxREAL);
+    prU82 = (U8 *)mxGetData(tmpU82);
+    *prU82 = vlr_wave_packet_descr->getCompressionType();
+    mxSetFieldByNumber(tmpvlr_2,vlrid,1,tmpU82);
+    tmpU321 = mxCreateNumericMatrix(1,1,mxUINT32_CLASS,mxREAL);
+    prU321 = (U32 *)mxGetData(tmpU321);
+    *prU321 = vlr_wave_packet_descr->getNumberOfSamples();
+    if (prU321==0) {
+        *prU321 = 80;
+    }
+    mxSetFieldByNumber(tmpvlr_2,vlrid,2,tmpU321);
+    tmpU322 = mxCreateNumericMatrix(1,1,mxUINT32_CLASS,mxREAL);
+    prU322 = (U32 *)mxGetData(tmpU322);
+    *prU322 = vlr_wave_packet_descr->getTemporalSpacing();
+    mxSetFieldByNumber(tmpvlr_2,vlrid,3,tmpU322);
+    mxSetFieldByNumber(tmpvlr_2,vlrid,4,mxCreateDoubleScalar(vlr_wave_packet_descr->getDigitizerGain()));
+    mxSetFieldByNumber(tmpvlr_2,vlrid,5,mxCreateDoubleScalar(vlr_wave_packet_descr->getDigitizerOffset()));    
+}
+int get_header_fields(LASheader *header, mxArray *mexhdr) {
     mxArray *tmp, *tmpA_1, *tmpA_2;
-    mxArray *tmpD_1, *tmpD_2, *tmpD_3, *tmpD_4, *tmpD_5, *tmpD_6; 
-    mxArray *tmpD_7, *tmpD_8, *tmpD_9, *tmpD_10, *tmpD_11, *tmpD_12; 
-    mxArray *tmpD_13, *tmpD_14, *tmpD_15, *tmpD_16, *tmpD_17; 
+    mxArray *tmpD_1, *tmpD_2, *tmpD_3, *tmpD_4, *tmpD_5, *tmpD_6;
+    mxArray *tmpD_7, *tmpD_8, *tmpD_9, *tmpD_10, *tmpD_11, *tmpD_12;
+    mxArray *tmpD_13, *tmpD_14, *tmpD_15, *tmpD_16, *tmpD_17;
     mxArray *tmpf64_1, *tmpf64_2,*tmpf64_3, *tmpf64_4, *tmpf64_5;
     mxArray *tmpf64_6, *tmpf64_7, *tmpf64_8,*tmpf64_9, *tmpf64_10, *tmpf64_11;
     mxArray *tmpf64_12, *tmpf64_13, *tmpf64_14;
-    mxArray *tmpvlr_1;
-    bool    wfdata = false;
+    mxArray *tmpvlr_1, *tmpvlr_2;
     char    *wfstr;
-    
+    int    WFDATAMAXSAMPLES=0;
     int nvlrs = header->number_of_variable_length_records;
-
+    
     if (strcmp(header->file_signature, "LASF") != 0) {
         mexPrintf("File signature is not 'LASF'... aborting");
-        return;
+        return(WFDATAMAXSAMPLES);
     }
-    /*These fields are in all headers;*/
+    /*These fields are in all headers;*/ 
     mxSetField(mexhdr, 0, "file_signature", mxCreateString(header->file_signature));
     tmpD_1 = mxCreateDoubleMatrix(1,1,mxREAL);
     *mxGetPr(tmpD_1) = (double)header->version_major;
@@ -419,7 +441,7 @@ void get_header_fields(LASheader *header, mxArray *mexhdr) {
     tmpD_15 = mxCreateDoubleMatrix(1,1,mxREAL);
     *mxGetPr(tmpD_15) = (double)header->point_data_record_length;
     mxSetField(mexhdr, 0, "point_data_record_length", tmpD_15);
-    tmpD_16 = mxCreateDoubleMatrix(1,1,mxREAL);
+    tmpD_16 = mxCreateDoubleMatrix(1,1,mxREAL);    
     *mxGetPr(tmpD_16) = (double)header->number_of_point_records;
     mxSetField(mexhdr, 0, "number_of_point_records", tmpD_16);
     
@@ -470,10 +492,16 @@ void get_header_fields(LASheader *header, mxArray *mexhdr) {
     *mxGetPr(tmpf64_13) = header->min_z;
     mxSetField(mexhdr, 0, "min_z", tmpf64_13);
     if (nvlrs >0)   {
+        LASattribute  *extra; //, *ext;
+        LASvlr_wave_packet_descr* vlr_wave_packet_descr;
         mxAddField(mexhdr,"variable_length_records");
         tmpvlr_1 = mxCreateStructMatrix(1,nvlrs,6,LASvlr_evrl_fields);
         mxSetField(mexhdr, 0, "variable_length_records", tmpvlr_1);
-        
+        vlr_wave_packet_descr = (LASvlr_wave_packet_descr*)mxMalloc(sizeof(LASvlr_wave_packet_descr*));
+        if (!vlr_wave_packet_descr) {
+            mexErrMsgTxt("could not allocate vlr_wave_packet_descr\n");
+        }
+        int wfi = 0;
         for (int i = 0; i < nvlrs; i++)
         {
             //mexPrintf("variable length header record %d of %d:\012", i+1, (int)header->number_of_variable_length_records);
@@ -485,18 +513,34 @@ void get_header_fields(LASheader *header, mxArray *mexhdr) {
             copy_vlr_struct(tmpvlr_1,header,i);
             if ((header->vlrs[i].record_id >= 100) && (header->vlrs[i].record_id < 355)) // WavePacketDescriptor
             {
-                LASvlr_wave_packet_descr* vlr_wave_packet_descr = (LASvlr_wave_packet_descr*)header->vlrs[i].data;
-                mexPrintf("  index %d bits/sample %d compression %d samples %u temporal %u gain %lg, offset %lg\012", header->vlrs[i].record_id-99, vlr_wave_packet_descr->getBitsPerSample(), vlr_wave_packet_descr->getCompressionType(), vlr_wave_packet_descr->getNumberOfSamples(), vlr_wave_packet_descr->getTemporalSpacing(), vlr_wave_packet_descr->getDigitizerGain(), vlr_wave_packet_descr->getDigitizerOffset());
-                wfdata = true;
+                
+                wfi++;
+                
+                vlr_wave_packet_descr = (LASvlr_wave_packet_descr*)header->vlrs[i].data;
+                //mexPrintf("  index %d bits/sample %d compression %d samples %u temporal %u gain %lg, offset %lg\012", header->vlrs[i].record_id-99, vlr_wave_packet_descr->getBitsPerSample(), vlr_wave_packet_descr->getCompressionType(), vlr_wave_packet_descr->getNumberOfSamples(), vlr_wave_packet_descr->getTemporalSpacing(), vlr_wave_packet_descr->getDigitizerGain(), vlr_wave_packet_descr->getDigitizerOffset());
+                if (WFDATAMAXSAMPLES<vlr_wave_packet_descr->getNumberOfSamples()) {
+                WFDATAMAXSAMPLES = vlr_wave_packet_descr->getNumberOfSamples();
+                }
             }            
         }
-        //if (wfdata) {
-        //    
-        //}
+        if (WFDATAMAXSAMPLES) {
+            mxAddField(mexhdr,"wave_packet_descriptors");
+            tmpvlr_2 = mxCreateStructMatrix(1,wfi,6,LASvlr_wave_packet_descriptor_fields);
+            mxSetField(mexhdr, 0, "wave_packet_descriptors", tmpvlr_2);
+            int iwf = 0;
+            for (int i = 0; i < nvlrs; i++) {
+                if ((header->vlrs[i].record_id >= 100) && (header->vlrs[i].record_id < 355)) // WavePacketDescriptor
+                {
+                    vlr_wave_packet_descr = (LASvlr_wave_packet_descr*)header->vlrs[i].data;
+                    copy_wf_vlr_struct(tmpvlr_2,vlr_wave_packet_descr,iwf);
+                    iwf++;
+                }
+            }
+                        
+        }
         
         //--------------------------------------------------------------------------------------------------
         if ( header->number_attributes > 0) {
-            LASattribute  *extra; //, *ext;
             mwSize dims = header->number_attributes;
             extra = (LASattribute*)mxMalloc(sizeof(LASattribute)*dims);
             if (!extra) {
@@ -509,7 +553,7 @@ void get_header_fields(LASheader *header, mxArray *mexhdr) {
             mxAddField(mexhdr,"attributes");
             tmpA_1 = mxCreateStructMatrix(1,dims,5,att_field_names);
             mxSetField(mexhdr, 0, "attributes", tmpA_1);
-            int VRLid = 0; 
+            int VRLid = 0;
             int k = 0;
             while (VRLid < nvlrs){
                 if (header->vlrs[VRLid].record_id == 4) // ExtraBytes
@@ -526,9 +570,17 @@ void get_header_fields(LASheader *header, mxArray *mexhdr) {
                 }
                 VRLid++;
             }
+            /*if (extra) {
+                mxFree(extra); 
+                
+            }*/
         }
+        /*if (vlr_wave_packet_descr) {
+            mxFree(vlr_wave_packet_descr);
+        }*/
+        
     }
-    
+    return(WFDATAMAXSAMPLES);
 }
 void copy_mex_point_arr(LASreader *lasreader, int next, double *p1, double *p2, 
         double *p3, double *p4, double *p5, double *p6, double *p7, 
@@ -543,7 +595,23 @@ void copy_mex_point_arr(LASreader *lasreader, int next, double *p1, double *p2,
     *(p6+next) = (double)lasreader->point.number_of_returns;
     *(p7+next) = (double)lasreader->point.scan_direction_flag;
     *(p8+next) = (double)lasreader->point.edge_of_flight_line;
-    *(p9+next) = (double)lasreader->point.classification;
+    //*(p9+next) = (double)lasreader->point.classification;
+    if (lasreader->header.point_data_format > 5)
+    {
+        if (lasreader->point.get_extended_classification())
+        {
+            *(p9+next) = (double)lasreader->point.get_extended_classification();
+        }
+        else
+        {
+            *(p9+next) = (double)lasreader->point.get_classification();
+        }
+    }
+    else
+    {
+        *(p9+next) = (double)lasreader->point.get_classification();
+    }
+    
     *(p10+next) = (double)lasreader->point.scan_angle_rank;
     *(p11+next) = (double)lasreader->point.user_data;
     *(p12+next) = (double)lasreader->point.point_source_ID;
@@ -617,11 +685,71 @@ void copy_attribute(LASreader *lasreader, double *ep1,int next, I32 attribute_ar
     {
         mexErrMsgTxt("ERROR: extra attribute type not valid.\n");
     }
-        if (lasreader->header.attributes[index].has_scale() || lasreader->header.attributes[index].has_offset())
+    if (lasreader->header.attributes[index].has_scale() || lasreader->header.attributes[index].has_offset())
     {
         *(ep1+next) = (lasreader->header.attributes[index].scale[0]* *(ep1+next) + lasreader->header.attributes[index].offset[0]) * 1.0;
     }
 
+}
+void copy_wf_pos_struct(LASreader *lasreader,int next, double *p1, double *p2, 
+        double *p3, double *p4, double *p5, double *p6, double *p7) {
+
+    *(p1+next) = (double)lasreader->point.wavepacket.getXt();
+    *(p2+next) = (double)lasreader->point.wavepacket.getYt();    
+    *(p3+next) = (double)lasreader->point.wavepacket.getZt();
+    *(p4+next) = (double)lasreader->point.wavepacket.getIndex();    
+    *(p5+next) = (double)lasreader->point.wavepacket.getOffset();
+    *(p6+next) = (double)lasreader->point.wavepacket.getSize();
+    *(p7+next) = (double)lasreader->point.wavepacket.getLocation();    
+}
+// void copy_mex_wf_point_arr(LASreader *lasreader,int next,double *pwfp, int wfs_num)
+// {
+// //     mexPrintf("Copy wf point: %d\t%d\t",next,wfs_num);
+// //     mexPrintf("ID: %d\t", lasreader->point.wavepacket.getIndex());
+//     *(pwfp+next) = (double)lasreader->point.wavepacket.getXt();
+//     *(pwfp+wfs_num+next) = (double)lasreader->point.wavepacket.getYt();
+//     *(pwfp+wfs_num*2+next) = (double)lasreader->point.wavepacket.getZt();
+//     *(pwfp+wfs_num*3+next) = (double)lasreader->point.wavepacket.getIndex(); 
+//     *(pwfp+wfs_num*4+next) = (double)lasreader->point.wavepacket.getOffset(); 
+//     *(pwfp+wfs_num*5+next) = (double)lasreader->point.wavepacket.getSize(); 
+//     *(pwfp+wfs_num*6+next) = (double)lasreader->point.wavepacket.getLocation();
+// }
+void copy_waveform(LASwaveform13reader *laswaveform13reader, int next, double *wfd, int wfs_num)
+{
+  U32 i;
+
+  if (laswaveform13reader->nbits == 8)
+  {
+    for (i = 0; i < laswaveform13reader->nsamples; i++)
+    {
+      //*(wfd+laswaveform13reader->nsamples*next+i) = (double)laswaveform13reader->samples[i];
+      *(wfd+wfs_num*i+next) = (double)laswaveform13reader->samples[i];
+      //mexPrintf("\t%d",laswaveform13reader->samples[i]);
+    }
+  }
+  else if (laswaveform13reader->nbits == 16)
+  {
+    for (i = 0; i < laswaveform13reader->nsamples; i++)
+    {
+      //*(wfd+laswaveform13reader->nsamples*next+i) = (double)((U16*)laswaveform13reader->samples)[i];
+      *(wfd+wfs_num*i+next) = (double)((U16*)laswaveform13reader->samples)[i];
+      //mexPrintf("\t%d",laswaveform13reader->samples[i]);
+    }
+  }
+  else if (laswaveform13reader->nbits == 32)
+  {
+    for (i = 0; i < laswaveform13reader->nsamples; i++)
+    {
+      //*(wfd+laswaveform13reader->nsamples*next+i) = (double)((I32*)laswaveform13reader->samples)[i];
+      *(wfd+wfs_num*i+next) = (double)((I32*)laswaveform13reader->samples)[i];
+      //mexPrintf("\t%d",laswaveform13reader->samples[i]);
+    }
+  }
+  else
+  {
+      mexPrintf("doing nothing in copy waveform!\n");
+  }
+  //mexPrintf("\n");
 }
 
 //**********************************************************************

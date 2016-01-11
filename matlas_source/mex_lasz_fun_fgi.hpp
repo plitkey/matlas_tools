@@ -54,6 +54,10 @@ const char *pnt_field_names[] = {"x","y","z","intensity", "return_number",
         "number_of_returns","scan_direction_flag",
         "edge_of_flight_line","classification","scan_angle_rank",
         "user_data","point_source_ID"};
+        
+const char *wave_pos_packet_fields[] = {"Xt","Yt","Zt","Index","Offset","Size","Location"};
+
+
 const char *att_field_names[] = {"name","type", "description","scale","offset"}; 
 const char *LASvlr_evrl_fields[] = {"reserved","user_id", "record_id",
         "record_length_after_header","description","data"};
@@ -65,7 +69,8 @@ const char *LASvlr_key_entry_fields[] = {"key_id","tiff_tag_location","count",
 
 const char *LASvlr_classification_fields[] = {"class_number", "description"};
 
-const char *LASvlr_wave_packet_fields[] = {"data"};
+const char *LASvlr_wave_packet_descriptor_fields[] = {"BitsPerSample","CompressionType",
+        "NumberOfSamples","TemporalSpacing","DigitizerGain","DigitizerOffset"};
 
 const char *LASvlr_lastiling_fields [] = {"level","level_index","implicit_levels : 30","buffer : 1","reversible : 1","min_x", "max_x", "min_y", "max_y"};
 
@@ -148,12 +153,18 @@ BOOL fgiparse(int argc, char *argv[], fgi_options *fgiopts);
 //**********************************************************************
 // Functions for reading
 void copy_vlr_struct(mxArray *tmpvlr_1, LASheader *header, int vlrid);
-void get_header_fields(LASheader *header, mxArray *mexhdr, I32 *eao);
+void copy_wf_vlr_struct(mxArray *tmpvlr_2, LASvlr_wave_packet_descr *vlr_wave_packet_descr, int vlrid);
+int get_header_fields(LASheader *header, mxArray *mexhdr);
+//void get_header_fields(LASheader *header, mxArray *mexhdr, I32 *eao);
 void copy_mex_point_arr(LASreader *lasreader, int next, double *p1, double *p2, 
         double *p3, double *p4, double *p5, double *p6, double *p7, 
         double *p8, double *p9, double *p10, double *p11, double *p12, 
         double *p13, double *p14);
 void copy_extra_attribute(LASreader *lasreader, double *ep1,int next, I32 attribute_array_offset, I32 index);
+void copy_wf_pos_struct(LASreader *lasreader,int next, double *p1, double *p2, 
+        double *p3, double *p4, double *p5, double *p6, double *p7);
+//void copy_mex_wf_point_arr(LASreader *lasreader,int next,double *pwfp, int wfs_num);
+void copy_waveform(LASwaveform13reader *laswaveform13reader, int next, double *wfd, int wfs_num);
 //**********************************************************************
 // Functions for writing
 void read_mex(LASheader *header, LASpoint *point, const mxArray *mexdata);

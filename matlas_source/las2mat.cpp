@@ -1,7 +1,7 @@
 /*
 ===============================================================================
 
-  FILE:  mat2las.cpp
+  FILE:  las2mat.cpp
 
   CONTENTS:
 
@@ -14,10 +14,10 @@
 
   PROGRAMMERS:
 
-    paula.litkey@fgi.fi - www.fgi.fi
+    paula.litkey@nls.fi - www.fgi.fi
 
   COPYRIGHT:
-
+    (c) 2015, Finnish Geospatial Research Institute, FGI
     (c) 2014, Finnish Geodetic Institute
 
     This is free software; you can redistribute and/or modify it under the
@@ -28,8 +28,9 @@
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   CHANGE HISTORY:
-
+       
     18 March 2014 -- First public matlas_tools version
+     October 2015 -- Waveform read
 
 ===============================================================================
 */
@@ -38,15 +39,15 @@
 //#include <time.h>
 #include <math.h>
 #include "lasreader.hpp"
+#include "laswaveform13reader.hpp"
 #include "lasdefinitions.hpp"
 #include "lasutility.hpp"
 #include "mex_lasz_fun_fgi.hpp" 
 #include "mex_lasz_fun_fgi.cpp" 
 
-
 void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int next = 0, Nextra = 0, extranext = 0;
-    
+    int wfnext = 0;
     int NUMBER_OF_HDRFIELDS = 33;
     int NUMBER_OF_PNTFIELDS = 12;
     I32 attribute_array_offsets[10];
@@ -54,13 +55,18 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     mxArray *tmpD_1, *tmpD_2, *tmpD_3, *tmpD_4, *tmpD_5, *tmpD_6;
     mxArray *tmpD_7, *tmpD_8, *tmpD_9, *tmpD_10, *tmpD_11, *tmpD_12;
     mxArray *tmpD_13, *tmpD_14, *tmpD_15;
-    mxArray *tmpI32; 
+    mxArray *tmpW_1, *tmpW_2, *tmpW_3, *tmpW_4, *tmpW_5, *tmpW_6, *tmpW_7;
+    mxArray *tmpI32, *tmpwp, *tmpwfp, *tmpwfpos, *tmpwpid;
     double *p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10;
     double *p11, *p12, *p13, *p14;
-    double *pe1;
+    double *pw1, *pw2, *pw3, *pw4, *pw5, *pw6, *pw7;
+    double *pe1, *pwp, *pwfp; // *pwpid;
     int argc = 0;
+    int wfs_num = 0;
     char **argv;
     char *parse_string;
+    int samples=0;
+    int WFMAXSAMPLES=0;
     fgi_options* fgiopts;
     fgiopts = new fgi_options();
     
@@ -90,15 +96,20 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (!lasreadopener.parse(argc, argv)) mexErrMsgTxt("lasreadopener parse error!!\n");
     LASreader *lasreader = lasreadopener.open();
     if (!lasreader) mexErrMsgTxt("LASREADER Error! could not open lasreader!");
-    lasreader->header.clean_laszip(); // re-created if needed in write 
+    lasreader->header.clean_laszip(); // re-created if needed in write
+    LASwaveform13reader *laswaveform13reader = lasreadopener.open_waveform13(&lasreader->header);
+    /*if (!laswaveform13reader) {
+        mexPrintf ("Waveform reader not opened\n");
+    }*/
 
     if (fgiopts->extra_pass)
     {
         // extra pass to precompute the header information
         // store the inventory for the header
-        LASinventory lasinventory;        
-        while (lasreader->read_point())  lasinventory.add(&lasreader->point);
-        
+        LASinventory lasinventory;
+        while (lasreader->read_point())  {
+            lasinventory.add(&lasreader->point);
+        }
         lasreader->close();
         if (!lasreadopener.reopen(lasreader))
         {
@@ -106,8 +117,8 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             mexErrMsgTxt("LASREADER: could not reopen");
         }
 
-        lasreader->header.number_of_point_records = lasinventory.number_of_point_records;
-        for (int i = 0; i < 5; i++) lasreader->header.number_of_points_by_return[i] = lasinventory.number_of_points_by_return[i+1];
+        lasreader->header.number_of_point_records = lasinventory.extended_number_of_point_records;
+        for (int i = 0; i < 5; i++) lasreader->header.number_of_points_by_return[i] = lasinventory.extended_number_of_points_by_return[i+1];
         lasreader->header.max_x = lasreader->header.get_x(lasinventory.max_X);
         lasreader->header.min_x = lasreader->header.get_x(lasinventory.min_X);
         lasreader->header.max_y = lasreader->header.get_y(lasinventory.max_Y);
@@ -121,11 +132,13 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (!header) mexErrMsgTxt("LASREADER: Unable to fetch header for file");
     header->clean_laszip();
     plhs[0] = mxCreateStructMatrix(1, 1, NUMBER_OF_HDRFIELDS, hdr_field_names);
-    get_header_fields(header, plhs[0]);
+    WFMAXSAMPLES = get_header_fields(header, plhs[0]);
     plhs[1] = mxCreateStructMatrix(1, 1, NUMBER_OF_PNTFIELDS, pnt_field_names);
     
     point = new LASpoint;
     point->init(&lasreader->header, lasreader->header.point_data_format, lasreader->header.point_data_record_length);
+    
+
     tmpD_1 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
     tmpD_2 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
     tmpD_3 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
@@ -183,12 +196,67 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         p14 = mxGetPr(tmpD_14);
         
     }
-    //if (point->have_wavepacket) {
-    //    mxAddField(plhs[1],"wavepacket");
-    //    tmpwp = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
-    //    mxSetField(plhs[1], 0, "wavepacket", tmpwp);
-    //    pwp = mxGetPr(tmpwp);
-    //}
+    
+    if (WFMAXSAMPLES) {
+        if (laswaveform13reader == 0)
+        {
+            mexErrMsgTxt("could not open laswaveform13reader!\n");
+        }
+
+        //
+//            mexPrintf("%d\t%d\t%d\t%g\t%g\t%g\t%g", lasreader->point.wavepacket.getIndex(), (U32)lasreader->point.wavepacket.getOffset(), lasreader->point.wavepacket.getSize(), lasreader->point.wavepacket.getLocation(), lasreader->point.wavepacket.getXt(), lasreader->point.wavepacket.getYt(), lasreader->point.wavepacket.getZt());
+
+//         mxAddField(plhs[1],"wavepacket_id");
+//         //tmpwpid = mxCreateNumericMatrix(header->number_of_point_records,1,mxINT32_CLASS,mxREAL);
+//         tmpwpid = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
+//         mxSetField(plhs[1], 0, "wavepacket_id", tmpwpid);
+//         pwpid = mxGetPr(tmpwpid);
+        if (lasreader->point.have_wavepacket == false) {
+            mexPrintf("WARNING: Waveform confusion, points do not have wavepacket\n");
+        }
+        if (wfs_num==0) {
+            wfs_num = header->number_of_point_records;
+            mexPrintf("corrected wfs_num: %d\n", wfs_num);
+        }
+        else {
+            mexPrintf("wfs_num: %d\n", wfs_num);
+        }
+        tmpwp = mxCreateDoubleMatrix(wfs_num,WFMAXSAMPLES,mxREAL);
+        mxAddField(plhs[1],"wavepacket");
+        mxSetField(plhs[1], 0, "wavepacket", tmpwp);
+        pwp = mxGetPr(tmpwp);
+        
+        mxAddField(plhs[1],"wave_pos_packet_fields");
+        tmpwfpos = mxCreateStructMatrix(1,1,7,wave_pos_packet_fields);
+        mxSetField(plhs[1], 0, "wave_pos_packet_fields", tmpwfpos);
+        tmpW_1 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
+        tmpW_2 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
+        tmpW_3 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
+        tmpW_4 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
+        tmpW_5 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
+        tmpW_6 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
+        tmpW_7 = mxCreateDoubleMatrix(header->number_of_point_records,1,mxREAL);
+        pw1 = mxGetPr(tmpW_1);
+        pw2 = mxGetPr(tmpW_2);
+        pw3 = mxGetPr(tmpW_3);
+        pw4 = mxGetPr(tmpW_4);
+        pw5 = mxGetPr(tmpW_5);
+        pw6 = mxGetPr(tmpW_6);
+        pw7 = mxGetPr(tmpW_7);
+        mxSetField(tmpwfpos, 0, "Xt", tmpW_1);
+        mxSetField(tmpwfpos, 0, "Yt", tmpW_2);
+        mxSetField(tmpwfpos, 0, "Zt", tmpW_3);
+        mxSetField(tmpwfpos, 0, "Index", tmpW_4);
+        mxSetField(tmpwfpos, 0, "Offset", tmpW_5);
+        mxSetField(tmpwfpos, 0, "Size", tmpW_6);
+        mxSetField(tmpwfpos, 0, "Location", tmpW_7);
+        
+        //tmpwfp = mxCreateDoubleMatrix(wfs_num,7,mxREAL);
+        //mxAddField(plhs[1],"wavepacket_info");
+        //mxSetField(plhs[1], 0, "wavepacket_info", tmpwfp);
+        //pwfp = mxGetPr(tmpwfp);
+        //mexPrintf("wfs_num: %d\n", wfs_num);
+    }
     
     if (header->number_attributes >0) { // init variables to read extra attributes
         mxArray *tmpD_15;
@@ -207,14 +275,40 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
         mxSetField(plhs[0], 0, "attribute_array_offsets", tmpI32);
     }
+    
+//     for (wfnext = 0; wfnext < wfs_num; wfnext++) {
+//         mexPrintf("\t%d",wfnext);
+//         for (int i = 0; i < WFMAXSAMPLES; i++)
+//         {
+//             *(pwp+(wfs_num*wfnext+i)) = wfs_num*wfnext+i;
+//             mexPrintf("\t%d",WFMAXSAMPLES*wfnext+i);
+//         }
+//         mexPrintf("\n");
+//     }
+    
     while (lasreader->read_point())
     {
         
         copy_mex_point_arr(lasreader,next,p1,p2,p3,
                 p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14);
-        
-        //if (point->have_wavepacket) {  
-        //}
+
+        if (laswaveform13reader && laswaveform13reader->read_waveform(&lasreader->point))
+        {
+            
+            //*(pwpid+wfnext) = lasreader->point.wavepacket.getIndex();
+            if (wfnext > WFMAXSAMPLES*header->number_of_point_records) {
+                mexErrMsgTxt("Overflow, wf!!");
+            }
+            copy_wf_pos_struct(lasreader,next,pw1,pw2,pw3,pw4,pw5,pw6,pw7);
+            //copy_mex_wf_point_arr(lasreader,wfnext,pwfp,wfs_num);
+            copy_waveform(laswaveform13reader,wfnext,pwp,wfs_num);
+            wfnext++;
+            
+        }
+        else
+        {
+            //mexPrintf("no_waveform\n");
+        }
         
         if (header->number_attributes >0) {
             I32 index;
@@ -229,6 +323,13 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         next++;
         
     }
+    if (laswaveform13reader)
+    {
+        laswaveform13reader->close();
+        delete laswaveform13reader;
+    }
+
+
     // close the reader
     lasreader->close();
     delete lasreader;
