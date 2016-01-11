@@ -21,6 +21,7 @@
 %   CHANGE HISTORY:
 % 
 %     24 March 2014 -- First public matlas_tools version
+%     11 January 2016 -- Version with waveform read
 %
 
 %% Set example folders
@@ -447,3 +448,59 @@ end
 
 %% Return to the original folder
 cd(def_folder)
+
+%% Waveform read: CAUTION waveform in las format is many times not ok according to the LAS specification
+% for example, waveform might be save for each extracted point, and as a result, the same wavepacket is recorded 
+% multiple times, the Xt,Yt,Zt anchor, however is typically the first return, using any other return as the anchor
+% will result in oddities.
+% 
+% use only small plots, large areas will crash Matlab 
+%
+% the str structure will have fields wavepacket and wavepacket_info and the header has field wave_packet_descriptors
+%
+%
+% example of plotting the waveform and the system extracted points
+%
+xyz(:,1) = str.x; %-min(str.x); % Scale coordinates to easier values
+xyz(:,2) = str.y; %-min(str.y);
+xyz(:,3) = str.z;
+plot3(xyz(:,1),xyz(:,2),xyz(:,3),'.');
+hold on;
+XYZT(:,1) = str.wave_pos_packet_fields.Xt;
+XYZT(:,2) = str.wave_pos_packet_fields.Yt;
+XYZT(:,3) = str.wave_pos_packet_fields.Zt;
+index = str.wave_pos_packet_fields.Index;
+location = str.wave_pos_packet_fields.Location(ids);
+for i = 1:size(str.wavepacket,1)
+    wf_vec = double(str.new_wavepacket(ii,:));
+    if ~isempty(wf_vec),
+       wf_index = index(ii);
+       if i>1 && length(wf_vec)==length(wf_vec_old) && all(wf_vec_old == wf_vec), % same wf recorded for all extracted points!
+          fprintf(1,'Skipping wf %d\n',i);
+          continue;
+       end
+                
+       if wf_index == 0,
+          %keyboard;
+          timestep = 1000; 
+       else
+          timestep = double(str.wf_header.wave_packet_descriptors(wf_index).TemporalSpacing);
+       end
+                
+       zwf = find(wf_vec,1,'last');
+       wf_vec = wf_vec(1:zwf);
+       wftime = 0:timestep:length(wf_vec)*timestep-1;
+       wftime = wftime*.5; % distance times 2 -> time*.5 !! check if location prints ok !!
+       tmptime = (repmat(wftime',1,3) - location(i)); %*.5; % time halving here!! if above not ok try this!!!
+       wf1 = tmptime .* repmat(XYZT(i,:),length(tmptime),1); % displacement from anchor point
+       wf0 = ones(size(wftime,2),1)*xyz(i,:); % anchor point
+       %keyboard;
+       if sum(wf_vec)~=0,
+           newPoints = wf_vec > NOISELEVEL;
+           npnt = wf0(newPoints,:)-wf1(newPoints,:); % position of the wf units % minus!!! 02.02.11!!!
+           if ~isempty(npnt) && length(npnt) > 2, % larger dim at least 3
+		plot3(npnt(:,1),npnt(:,2),npnt(:,3),'.','MarkerSize',1)
+           end
+       end
+    end
+ end
