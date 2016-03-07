@@ -21,13 +21,14 @@ See CC-BY-40.pdf provided in this folder for details.
 
   PROGRAMMERS:
   
-  paula.litkey (at) fgi.fi
-  eetu.puttonen (at) fgi.fi
+  paula.litkey (at) nls.fi
+  eetu.puttonen (at) nls.fi
   
 # -----------------------------------------------------------------------
 
   COPYRIGHT:
   
-  (c) 2012-2014, Finnish Geodetic Institute
+  (c) 2015 -, Land Survey of Finland, Finnish Geospatial Research Institute (FGI)
+
 
 # -----------------------------------------------------------------------

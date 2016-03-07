@@ -385,7 +385,7 @@ int get_header_fields(LASheader *header, mxArray *mexhdr) {
     int    WFDATAMAXSAMPLES=0;
     int nvlrs = header->number_of_variable_length_records;
     
-    if (strcmp(header->file_signature, "LASF") != 0) {
+    if (strncmp(header->file_signature, "LASF",4) != 0) {
         mexPrintf("File signature is not 'LASF'... aborting");
         return(WFDATAMAXSAMPLES);
     }
