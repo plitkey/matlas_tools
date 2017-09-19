@@ -11,6 +11,7 @@ Created on Wed Feb 26 11:58:47 2014
   COPYRIGHT:
 
     (c) 2014, Finnish Geodetic Institute
+        2017, Finnish Geospatial Research Institute, NLS Finland
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -56,8 +57,8 @@ def mkw_dirs(wdir0) :
 def copy_nochange(laszpath,writedh,writeds) :
     
     cdir = os.path.join(laszpath, "LASzip","dll")
-    shutil.copy(os.path.join(cdir,"laszip_dll.h"), writedh)
-    shutil.copy(os.path.join(cdir,"laszip_dll.c"), writeds)
+    shutil.copy(os.path.join(cdir,"laszip_api.h"), writedh)
+    shutil.copy(os.path.join(cdir,"laszip_api.c"), writeds)
     cdir = os.path.join(laszpath,"src")
     shutil.copy(os.path.join(cdir,"geoprojectionconverter.hpp"), writedh)
     shutil.copy(os.path.join(cdir,"geoprojectionconverter.cpp"), writeds)
